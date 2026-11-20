@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Backend Trail admin</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Spline+Sans+Mono:wght@400;500&display=swap">
+<style>
+*{box-sizing:border-box}
+:root{
+  --bg:#EDF1EA;--surface:#FAFBF7;--surface2:#F1F5EE;--ink:#16302A;--muted:#5B6E67;--line:#CBD6CC;
+  --accent:#2B52C9;--accent-soft:#DCE4FA;--mark:#E7B13A;--good:#2B7A57;--good-soft:#D6EBDF;--bad:#B4432E;--bad-soft:#F5DDD6;
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0F1915;--surface:#17251F;--surface2:#1C2D26;--ink:#E3EDE4;--muted:#93A69D;--line:#2B3D35;
+    --accent:#86A2FF;--accent-soft:#223157;--mark:#E7B13A;--good:#5CC49A;--good-soft:#173A2C;--bad:#F08A72;--bad-soft:#40201A;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0F1915;--surface:#17251F;--surface2:#1C2D26;--ink:#E3EDE4;--muted:#93A69D;--line:#2B3D35;
+  --accent:#86A2FF;--accent-soft:#223157;--mark:#E7B13A;--good:#5CC49A;--good-soft:#173A2C;--bad:#F08A72;--bad-soft:#40201A;
+}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:'Bricolage Grotesque',system-ui,-apple-system,'Segoe UI',sans-serif;font-size:16px;line-height:1.5}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+h1,h2,h3{margin:0;line-height:1.15;letter-spacing:-.02em}
+h1{font-size:clamp(1.7rem,3vw,2.3rem);font-weight:800}
+h2{font-size:1.25rem;font-weight:700}
+p{margin:0 0 .8em}
+.btn{border:1.5px solid var(--line);background:var(--surface);padding:7px 14px;border-radius:9px;cursor:pointer;font-weight:600;font-size:.92rem}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.danger{border-color:var(--bad);color:var(--bad)}
+.btn.danger.armed{background:var(--bad);color:#fff}
+.btn.small{padding:4px 10px;font-size:.82rem}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+input,select{background:var(--surface);border:1.5px solid var(--line);border-radius:8px;padding:8px 10px;width:100%}
+.hint{color:var(--muted);font-size:.86rem}
+.tag{display:inline-block;padding:1px 8px;border-radius:6px;font-size:.76rem;font-weight:650;background:var(--surface2);border:1px solid var(--line);white-space:nowrap}
+.tag.ok{background:var(--good-soft);border-color:var(--good);color:var(--good)}
+.tag.bad{background:var(--bad-soft);border-color:var(--bad);color:var(--bad)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin-bottom:16px}
+.err{background:var(--bad-soft);color:var(--bad);border-radius:9px;padding:9px 12px;font-weight:600;font-size:.9rem;margin-bottom:14px}
+
+/* sign-in */
+.login{min-height:100vh;min-height:100dvh;display:grid;place-items:center;padding:24px 16px}
+.login .card{width:min(400px,100%);padding:26px}
+.login h1{font-size:1.6rem;margin:4px 0 6px}
+.gbtn{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;padding:12px 16px;border-radius:10px;border:1.5px solid var(--line);background:#fff;color:#1F1F1F;font-weight:650;font-size:1rem;text-decoration:none}
+.gbtn:hover{border-color:var(--accent)}
+.av{width:34px;height:34px;border-radius:50%;object-fit:cover;border:1px solid var(--line);flex:none;background:var(--surface2);display:grid;place-items:center;font-weight:700;font-size:.85rem;color:var(--muted)}
+.sname{display:flex;gap:10px;align-items:center}
+
+/* layout */
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;max-width:1280px;margin:0 auto;padding:18px 20px 6px;flex-wrap:wrap}
+.brand b{font-size:1.35rem;font-weight:800;letter-spacing:-.02em;display:block;line-height:1.1}
+.brand span{font-size:.85rem;color:var(--muted)}
+.top-r{display:flex;gap:10px;align-items:center;font-size:.88rem;color:var(--muted)}
+main{max-width:1280px;margin:0 auto;padding:14px 20px 72px}
+
+/* class trail: completions per day */
+.ctrail{display:grid;grid-template-columns:repeat(15,minmax(0,1fr));gap:6px;align-items:end;margin-top:16px}
+.cday{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:0}
+.ccol{width:100%;max-width:44px;height:130px;background:var(--surface2);border:1px solid var(--line);border-radius:8px;display:flex;align-items:flex-end;overflow:hidden}
+.ccol i{display:block;width:100%;background:var(--accent);border-radius:6px 6px 0 0;min-height:0;transition:height .4s}
+.cdot{width:26px;height:26px;border-radius:50%;background:var(--surface);border:2px solid var(--ink);font-size:.72rem;font-weight:700;display:grid;place-items:center}
+.cday.deep .cdot{box-shadow:0 0 0 3px var(--mark)}
+.cnum{font-weight:700;font-size:.86rem;line-height:1}
+.cq{font-size:.72rem;color:var(--muted);line-height:1.1;text-align:center}
+.legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:12px;font-size:.82rem;color:var(--muted)}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;background:var(--accent);vertical-align:-1px;margin-right:6px}
+.legend i.ring{background:var(--surface);border:2px solid var(--ink);border-radius:50%;box-shadow:0 0 0 2px var(--mark)}
+
+.stats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin-bottom:16px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+.stat b{display:block;font-size:1.7rem;line-height:1;letter-spacing:-.03em}
+.stat span{color:var(--muted);font-size:.84rem}
+
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.toolbar .search{flex:1 1 240px}
+.toolbar select{width:auto}
+.scroll-x{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+th,td{padding:10px 10px;border-bottom:1px solid var(--line);text-align:left;font-size:.92rem;vertical-align:middle}
+th{font-size:.8rem;color:var(--muted);font-weight:600;white-space:nowrap}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+tbody tr{cursor:pointer}
+tbody tr:hover{background:var(--surface2)}
+.sname b{display:block;font-weight:650}
+.sname span{font-size:.82rem;color:var(--muted)}
+.dots{display:flex;gap:3px}
+.dots i{width:9px;height:9px;border-radius:50%;background:var(--line)}
+.dots i.s{background:color-mix(in srgb,var(--accent) 40%,var(--line))}
+.dots i.d{background:var(--accent)}
+.empty{text-align:center;padding:36px 12px;color:var(--muted)}
+
+/* student detail */
+dialog{border:1px solid var(--line);border-radius:16px;background:var(--surface);color:var(--ink);padding:0;width:min(860px,calc(100vw - 24px));max-height:calc(100dvh - 24px)}
+dialog::backdrop{background:rgba(10,20,16,.45)}
+.dhead{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;padding:20px 22px 12px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--surface);z-index:1}
+.dbody{padding:16px 22px 22px}
+.mini{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:16px}
+.mini div{background:var(--surface2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:.84rem;color:var(--muted)}
+.mini b{display:block;font-size:1.35rem;color:var(--ink);line-height:1.1}
+.actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:16px;padding-top:16px;border-top:1px solid var(--line)}
+.toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 24px);transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:10px;font-weight:650;z-index:60;max-width:90vw}
+
+@media (max-width:900px){
+  .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .ctrail{grid-template-columns:repeat(15,40px);overflow-x:auto;padding-bottom:6px}
+  .ctrail-wrap{overflow-x:auto}
+  .mini{grid-template-columns:1fr 1fr}
+  .hide-m{display:none}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<section class="login" id="login" hidden>
+  <div class="card">
+    <span class="hint">Backend Trail</span>
+    <h1>Admin sign-in</h1>
+    <p class="hint" style="margin-bottom:18px">Track every student’s progress, quiz scores and weak days.</p>
+    <div class="err" id="loginErr" role="alert" hidden></div>
+    <a class="gbtn" id="gBtn" href="/api/google?as=admin"><svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34.1 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34.1 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg><span>Continue with Google</span></a>
+    <p class="hint" style="margin:14px 0 0">Only Google accounts listed as course admins can open this page.</p>
+  </div>
+</section>
+
+<div id="app" hidden>
+  <header class="top">
+    <div class="brand"><b>Backend Trail admin</b><span>Student progress and scores</span></div>
+    <div class="top-r"><span id="adminEmail"></span><a class="btn small" href="/" style="text-decoration:none;color:var(--ink)">Student view</a><button class="btn small" id="logout">Sign out</button></div>
+  </header>
+  <main>
+    <div class="err" id="loadErr" role="alert" hidden></div>
+    <section class="card">
+      <h2>Where the class is on the trail</h2>
+      <p class="hint" style="margin:4px 0 0">Each column shows how many students have marked that day complete. The figure under it is the average best quiz score for students who took that day’s quiz.</p>
+      <div class="ctrail-wrap"><div class="ctrail" id="ctrail"></div></div>
+      <div class="legend"><span><i></i>Students who completed the day</span><span><i class="ring"></i>Deep-focus day</span></div>
+    </section>
+    <div class="stats" id="stats"></div>
+    <section class="card">
+      <div class="toolbar">
+        <input class="search" type="search" id="q" placeholder="Search by name or email" aria-label="Search students">
+        <select id="sort" aria-label="Sort students">
+          <option value="progress">Most days complete</option>
+          <option value="xp">Highest XP</option>
+          <option value="accuracy">Best quiz accuracy</option>
+          <option value="mock">Best mock score</option>
+          <option value="active">Recently active</option>
+          <option value="attention">Needs attention first</option>
+          <option value="name">Name A to Z</option>
+          <option value="joined">Newest accounts</option>
+        </select>
+        <button class="btn" id="refresh">Refresh</button>
+        <button class="btn" id="csv">Download CSV</button>
+      </div>
+      <div class="scroll-x">
+        <table>
+          <thead><tr>
+            <th>Student</th><th>Trail</th><th class="num">Days</th><th class="num">XP</th>
+            <th class="num">Quiz accuracy</th><th class="num">Mock best</th><th class="num hide-m">Missed Qs</th><th>Last active</th><th class="hide-m">Status</th>
+          </tr></thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+      <p class="hint" id="count" style="margin:10px 0 0"></p>
+    </section>
+  </main>
+</div>
+
+<dialog id="detail" aria-labelledby="dName"></dialog>
+
+<script>
+const DAYS=[[1,"Backend and Node.js fundamentals",0],[2,"Event loop, modules, events and streams",0],[3,"HTTP and web servers",1],[4,"Routing and HTTP concepts",1],[5,"Express basics: routes, params, JSON and 404s",1],[6,"Middleware, body parsing, CORS and uploads",1],[7,"REST, Router, static files and MVC",1],[8,"Databases, SQL drivers and Prisma",0],[9,"Authentication and session-based auth",1],[10,"Token-based auth and JWT",1],[11,"Token storage, refresh tokens and pitfalls",1],[12,"OAuth 2.0 and OpenID Connect",1],[13,"Authorization: RBAC, ABAC and middleware",1],[14,"WebSockets and Socket.IO basics",1],[15,"Rooms, namespaces, disconnects and final mock",1]];
+const $=(s,r=document)=>r.querySelector(s);
+const esc=s=>String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const DAY=864e5;
+let STUDENTS=[];
+
+async function api(path,opts={}){
+  const init={credentials:'same-origin',...opts};
+  if(opts.body!==undefined){init.method=init.method||'POST';init.headers={'Content-Type':'application/json'};init.body=JSON.stringify(opts.body)}
+  const r=await fetch('/api/admin?'+path,init);
+  const j=await r.json().catch(()=>({}));
+  if(r.status===401&&!path.startsWith('action=login')){showLogin('Your admin session ended. Sign in again.');throw new Error('signed out')}
+  if(!r.ok)throw new Error(j.error||'Request failed ('+r.status+').');
+  return j;
+}
+function toast(msg){const o=$('.toast');if(o)o.remove();const t=document.createElement('div');t.className='toast';t.role='status';t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),2600)}
+function ago(ts){
+  if(!ts)return 'never';
+  const d=Date.now()-ts;
+  if(d<6e4)return 'just now';
+  if(d<36e5)return Math.round(d/6e4)+' min ago';
+  if(d<DAY)return Math.round(d/36e5)+' h ago';
+  if(d<30*DAY)return Math.round(d/DAY)+' d ago';
+  return new Date(ts).toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'});
+}
+const date=ts=>ts?new Date(ts).toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'}):'–';
+const pct=v=>v===null||v===undefined?'–':v+'%';
+const S=st=>st.summary||{daysDone:0,xp:0,level:1,accuracy:null,mockBest:0,missed:0,answers:0,days:[]};
+
+function flags(st){
+  const s=S(st),out=[];
+  if(!st.lastActive||Date.now()-st.lastActive>4*DAY)out.push('Inactive 4+ days');
+  if(s.accuracy!==null&&s.accuracy!==undefined&&s.answers>=10&&s.accuracy<55)out.push('Low quiz accuracy');
+  if(!s.daysDone&&!s.answers)out.push('Not started');
+  return out;
+}
+
+/* ---------- sign-in ---------- */
+function showLogin(msg){$('#app').hidden=true;$('#login').hidden=false;const e=$('#loginErr');e.textContent=msg||'';e.hidden=!msg;if($('#detail').open)$('#detail').close()}
+const LOGIN_ERRORS={
+  notadmin:'That Google account is not on the admin list. Sign in with an admin account, or add the email to ADMIN_EMAILS in Vercel.',
+  cancelled:'Sign-in was cancelled.',
+  expired:'That sign-in took too long or was opened in another tab. Try again.',
+  unverified:'Google has not verified that email address.',
+  disabled:'Google sign-in is not set up. Add GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in Vercel.',
+  ratelimit:'Too many sign-in attempts. Wait 15 minutes and try again.',
+  failed:'Google sign-in did not complete. Try again.',
+};
+$('#logout').onclick=async()=>{try{await api('action=logout',{body:{}})}catch(e){}showLogin()};
+
+function enter(admin){
+  $('#adminEmail').textContent=admin.name?admin.name+' ('+admin.email+')':admin.email;
+  $('#login').hidden=true;$('#app').hidden=false;load();
+}
+
+/* ---------- data ---------- */
+async function load(){
+  const b=$('#refresh');b.disabled=true;b.textContent='Refreshing…';
+  try{
+    STUDENTS=(await api('action=students')).students;$('#loadErr').hidden=true;draw();
+  }catch(e){if(e.message!=='signed out'){const el=$('#loadErr');el.textContent='Could not load students. '+e.message;el.hidden=false}}
+  finally{b.disabled=false;b.textContent='Refresh'}
+}
+$('#refresh').onclick=load;
+$('#q').oninput=drawRows;$('#sort').onchange=drawRows;
+
+function draw(){drawTrail();drawStats();drawRows()}
+function drawTrail(){
+  const n=STUDENTS.length||1;
+  $('#ctrail').innerHTML=DAYS.map(([d,title,deep])=>{
+    const done=STUDENTS.filter(st=>S(st).days?.[d-1]?.done).length;
+    const bests=STUDENTS.map(st=>S(st).days?.[d-1]?.quizBest).filter(v=>v!==null&&v!==undefined);
+    const avg=bests.length?Math.round(bests.reduce((a,b)=>a+b,0)/bests.length)+'%':'–';
+    return `<div class="cday ${deep?'deep':''}" title="Day ${d}: ${esc(title)}. ${done} of ${STUDENTS.length} complete, ${bests.length} took the quiz.">
+      <span class="cnum">${done}</span><div class="ccol"><i style="height:${done/n*100}%"></i></div><span class="cdot">${d}</span><span class="cq">${avg}</span></div>`;
+  }).join('');
+}
+function avg(list){const v=list.filter(x=>x!==null&&x!==undefined);return v.length?Math.round(v.reduce((a,b)=>a+b,0)/v.length):null}
+function drawStats(){
+  const n=STUDENTS.length;
+  const active=STUDENTS.filter(st=>st.lastActive&&Date.now()-st.lastActive<7*DAY).length;
+  const d=avg(STUDENTS.map(st=>S(st).daysDone));
+  const a=avg(STUDENTS.map(st=>S(st).answers?S(st).accuracy:null));
+  const m=avg(STUDENTS.map(st=>S(st).mockBest||null));
+  $('#stats').innerHTML=[
+    [n,'students signed up'],[active,'active in the last 7 days'],[d===null?'–':d+' / 15','average days complete'],
+    [pct(a),'average quiz accuracy'],[pct(m),'average best mock score']
+  ].map(([b,s])=>`<div class="stat"><b>${b}</b><span>${s}</span></div>`).join('');
+}
+function sorted(){
+  const q=$('#q').value.trim().toLowerCase();
+  let list=STUDENTS.filter(st=>!q||st.name.toLowerCase().includes(q)||st.email.includes(q));
+  const k=$('#sort').value,num=v=>v===null||v===undefined?-1:v;
+  const by={
+    progress:(a,b)=>S(b).daysDone-S(a).daysDone||S(b).xp-S(a).xp,
+    xp:(a,b)=>S(b).xp-S(a).xp,
+    accuracy:(a,b)=>num(S(b).accuracy)-num(S(a).accuracy),
+    mock:(a,b)=>(S(b).mockBest||0)-(S(a).mockBest||0),
+    active:(a,b)=>(b.lastActive||0)-(a.lastActive||0),
+    attention:(a,b)=>flags(b).length-flags(a).length||(a.lastActive||0)-(b.lastActive||0),
+    name:(a,b)=>a.name.localeCompare(b.name),
+    joined:(a,b)=>(b.createdAt||0)-(a.createdAt||0),
+  }[k];
+  return list.sort(by);
+}
+function avatar(st){
+  return st.picture?`<img class="av" src="${esc(st.picture)}" data-i="${esc((st.name||'?').trim().charAt(0).toUpperCase())}" alt="" loading="lazy" referrerpolicy="no-referrer">`:`<span class="av" aria-hidden="true">${esc((st.name||'?').trim().charAt(0).toUpperCase())}</span>`;
+}
+document.addEventListener('error',e=>{const t=e.target;if(t.matches&&t.matches('img.av')){const sp=document.createElement('span');sp.className='av';sp.setAttribute('aria-hidden','true');sp.textContent=(t.dataset.i||'?');t.replaceWith(sp)}},true);
+function dots(st){
+  const days=S(st).days||[];
+  return '<span class="dots" aria-hidden="true">'+DAYS.map((_,i)=>{const d=days[i];return `<i class="${d&&d.done?'d':d&&(d.checks||d.attempts)?'s':''}"></i>`}).join('')+'</span>';
+}
+function drawRows(){
+  const list=sorted();
+  $('#rows').innerHTML=list.length?list.map(st=>{
+    const s=S(st),f=flags(st);
+    return `<tr data-email="${esc(st.email)}" tabindex="0">
+      <td><div class="sname">${avatar(st)}<div><b>${esc(st.name)}</b><span>${esc(st.email)}</span></div></div></td>
+      <td>${dots(st)}</td>
+      <td class="num">${s.daysDone}/15</td>
+      <td class="num">${s.xp} <span class="hint">L${s.level}</span></td>
+      <td class="num">${s.answers?pct(s.accuracy):'–'}</td>
+      <td class="num">${s.mockBest?s.mockBest+'%':'–'}</td>
+      <td class="num hide-m">${s.missed||0}</td>
+      <td title="${esc(st.lastActive?new Date(st.lastActive).toLocaleString():'')}">${ago(st.lastActive)}</td>
+      <td class="hide-m">${f.length?f.map(x=>`<span class="tag bad">${x}</span>`).join(' '):s.daysDone===15?'<span class="tag ok">Finished</span>':'<span class="tag">On track</span>'}</td>
+    </tr>`;
+  }).join(''):`<tr><td colspan="9" class="empty">${STUDENTS.length?'No students match that search.':'No students yet. Share the site link so students can create accounts with their email.'}</td></tr>`;
+  $('#count').textContent=STUDENTS.length?`Showing ${list.length} of ${STUDENTS.length} students. Click a student to see each day’s scores.`:'';
+}
+$('#rows').addEventListener('click',e=>{const tr=e.target.closest('tr[data-email]');if(tr)openStudent(tr.dataset.email)});
+$('#rows').addEventListener('keydown',e=>{if(e.key==='Enter'){const tr=e.target.closest('tr[data-email]');if(tr)openStudent(tr.dataset.email)}});
+
+/* ---------- student detail ---------- */
+async function openStudent(email){
+  const dlg=$('#detail');
+  dlg.innerHTML=`<div class="dbody"><p class="hint">Loading ${esc(email)}…</p></div>`;
+  if(!dlg.open)dlg.showModal();
+  let st;
+  try{st=(await api('action=student&email='+encodeURIComponent(email))).student}
+  catch(e){dlg.innerHTML=`<div class="dbody"><div class="err">${esc(e.message)}</div><button class="btn" data-close>Close</button></div>`;return}
+  const s=S(st),days=s.days||[];
+  dlg.innerHTML=`<div class="dhead"><div class="sname">${avatar(st)}<div><h2 id="dName">${esc(st.name)}</h2><span class="hint">${esc(st.email)}. Joined ${date(st.createdAt)}, last active ${ago(st.lastActive)}.</span></div></div><button class="btn small" data-close>Close</button></div>
+  <div class="dbody">
+    <div class="mini">
+      <div><b>${s.daysDone}/15</b>days complete</div>
+      <div><b>${s.xp}</b>XP, level ${s.level}</div>
+      <div><b>${s.answers?pct(s.accuracy):'–'}</b>quiz accuracy${s.answers?' over '+s.answers+' answers':''}</div>
+      <div><b>${s.mockBest?s.mockBest+'%':'–'}</b>best mock score</div>
+      <div><b>${s.checksDone||0}/${s.checksTotal||0}</b>checklist items</div>
+      <div><b>${s.missed||0}</b>questions to retry</div>
+      <div><b>${s.missions||0}</b>coding missions solved</div>
+      <div><b>${s.predictions||0}</b>output predictions right</div>
+    </div>
+    <div class="scroll-x"><table>
+      <thead><tr><th>Day</th><th>Topic</th><th class="num">Checklist</th><th class="num">Quiz best</th><th class="num">Attempts</th><th class="num">Accuracy</th><th class="num">To retry</th><th>Status</th></tr></thead>
+      <tbody>${DAYS.map(([n,title,deep],i)=>{const d=days[i]||{};
+        return `<tr style="cursor:default"><td>${n}</td><td>${esc(title)}${deep?' <span class="tag" style="border-color:var(--mark)">Deep</span>':''}</td>
+        <td class="num">${d.checks||0}/${d.checksTotal||'–'}</td><td class="num">${pct(d.quizBest)}</td><td class="num">${d.attempts||0}</td>
+        <td class="num">${pct(d.accuracy)}</td><td class="num">${d.missed||0}</td>
+        <td>${d.done?'<span class="tag ok">Done</span>':(d.checks||d.attempts)?'<span class="tag">In progress</span>':'<span class="tag">Not started</span>'}</td></tr>`}).join('')}</tbody>
+    </table></div>
+    ${s.updatedAt?`<p class="hint" style="margin:10px 0 0">Progress last saved ${new Date(s.updatedAt).toLocaleString()}.</p>`:'<p class="hint" style="margin:10px 0 0">This student has not saved any progress yet.</p>'}
+    <div class="actions">
+      <button class="btn danger" id="delSt">Delete student and progress</button>
+      <span class="hint">They can sign in again with Google, but will start from Day 1.</span>
+      <span id="actOut"></span>
+    </div>
+  </div>`;
+  $('#delSt',dlg).onclick=async e=>{
+    const b=e.target;
+    if(!b.classList.contains('armed')){b.classList.add('armed');b.textContent='Click again to delete '+st.name;setTimeout(()=>{if(b.isConnected){b.classList.remove('armed');b.textContent='Delete student and progress'}},4000);return}
+    b.disabled=true;
+    try{await api('action=delete',{body:{email:st.email}});dlg.close();toast('Deleted '+st.name);load()}
+    catch(err){$('#actOut',dlg).innerHTML=`<span class="tag bad">${esc(err.message)}</span>`;b.disabled=false}
+  };
+}
+$('#detail').addEventListener('click',e=>{if(e.target.closest('[data-close]')||e.target===$('#detail'))$('#detail').close()});
+
+/* ---------- CSV ---------- */
+$('#csv').onclick=()=>{
+  const cell=v=>{v=v===null||v===undefined?'':String(v);if(/^[=+\-@\t\r]/.test(v))v="'"+v;return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};
+  const head=['Name','Email','Joined','Last active','Days complete','XP','Level','Quiz accuracy %','Answers','Mock best %','Checklist done','Checklist total','Missed questions','Coding missions','Predictions',...DAYS.map(([n])=>'Day '+n+' quiz best %'),...DAYS.map(([n])=>'Day '+n+' done')];
+  const lines=[head,...sorted().map(st=>{const s=S(st),d=s.days||[];return [st.name,st.email,date(st.createdAt),st.lastActive?new Date(st.lastActive).toISOString():'',s.daysDone,s.xp,s.level,s.answers?s.accuracy:'',s.answers,s.mockBest,s.checksDone,s.checksTotal,s.missed,s.missions,s.predictions,...DAYS.map((_,i)=>d[i]?.quizBest??''),...DAYS.map((_,i)=>d[i]?.done?'yes':'no')]})];
+  const blob=new Blob(['\ufeff'+lines.map(r=>r.map(cell).join(',')).join('\n')],{type:'text/csv'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='backend-trail-students-'+new Date().toISOString().slice(0,10)+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+};
+
+/* ---------- start ---------- */
+(async()=>{
+  const code=new URLSearchParams(location.search).get('auth_error');
+  if(code){history.replaceState(null,'',location.pathname);return showLogin(LOGIN_ERRORS[code]||LOGIN_ERRORS.failed)}
+  try{const r=await fetch('/api/admin?action=me',{credentials:'same-origin'});if(r.ok){enter((await r.json()).admin);return}}catch(e){}
+  showLogin();
+})();
+</script>
+</body>
+</html>
