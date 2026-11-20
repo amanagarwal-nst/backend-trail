@@ -5,8 +5,8 @@ import { SignJWT, jwtVerify } from 'jose';
 let client = globalThis.__BT_REDIS || null;
 export function db() {
   if (client) return client;
-  const url = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
-  const token = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
+  const url = process.env.KV_REST_API_URL || process.env.AP_KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
+  const token = process.env.KV_REST_API_TOKEN || process.env.AP_KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
   if (!url || !token) throw new HttpError(500, 'Database is not connected. Add an Upstash Redis store to this Vercel project (see README).');
   client = new Redis({ url, token });
   return client;
